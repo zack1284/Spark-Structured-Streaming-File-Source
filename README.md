@@ -18,11 +18,10 @@ To implement testing with Spark Structured Streaming.
 │   │   ├── 002.csv
 │   │   └── 003.csv
 │   └── output
-│       ├── part-00000-cd54af21-dcab-465d-b6e5-570b64e8052e-c000.json
-│       └── _spark_metadata
-│           └── 0
+│       └── part-00000-7d775ec6-53f2-4047-bde6-a71403565b97-c000.json
 ├── README.md
 └── stream.py
+
 ```
 ### Input
 * 001.CSV
