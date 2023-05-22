@@ -1,53 +1,57 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import lower, lit
 from pyspark.sql.types import StructType, StructField, IntegerType, StringType
+import os
 
-
-# create SparkSession
+# Create SparkSession
 spark = SparkSession.builder \
     .appName("StructuredStreamingExample") \
     .getOrCreate()
 
-# show less log data
+# Show less log data
 spark.sparkContext.setLogLevel("ERROR")
 
-# define schema
+# Define schema
 schema = StructType([
     StructField("id", IntegerType(), True),
     StructField("name", StringType(), True),
     StructField("age", IntegerType(), True)
 ])
 
-
-# read csv files and create Streaming DataFrame
-
-inputPath = "dir/input"  #make sure stream.py & dir at same location 
+# Read CSV files and create Streaming DataFrame
+inputPath = "dir/input"
 df = spark.readStream \
     .format("csv") \
     .option("header", "False") \
     .schema(schema) \
     .load(inputPath)
 
-# convert "name" to lowercase
+# Convert "name" to lowercase
 df = df.withColumn("name", lower(df["name"]))
 
-# add city 
+# Add city
 df = df.withColumn("city", lit("taipei"))
 
-    
-    
-# export as json file 
-outputPath = "dir/output"  
-query = df.coalesce(1) \
-    .writeStream \
-    .format("json") \
+# Define output path
+outputPath = "dir/output"
+
+# Define foreachBatch function to write JSON output to not generating metadata file
+def writeBatch(batchDF, batchId):
+    if not batchDF.isEmpty():
+        # To produce only one json file
+        batchDF.coalesce(1).write.json(outputPath, mode="append")
+        # Remove _SUCCESS file
+        successFilePath = os.path.join(outputPath, "_SUCCESS")
+        if os.path.exists(successFilePath):
+            os.remove(successFilePath)
+
+
+# Write streaming data using foreachBatch
+query = df.writeStream \
+    .foreachBatch(writeBatch) \
     .outputMode("append") \
     .option("checkpointLocation", "dir/checkpoint") \
-    .option("path", outputPath) \
     .start()
-    
 
 query.awaitTermination()
-
-
 
