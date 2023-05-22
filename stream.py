@@ -11,6 +11,9 @@ spark = SparkSession.builder \
 # Show less log data
 spark.sparkContext.setLogLevel("ERROR")
 
+# disable generating success file
+spark.conf.set("mapreduce.fileoutputcommitter.marksuccessfuljobs", "false")
+
 # Define schema
 schema = StructType([
     StructField("id", IntegerType(), True),
@@ -40,11 +43,6 @@ def writeBatch(batchDF, batchId):
     if not batchDF.isEmpty():
         # To produce only one json file
         batchDF.coalesce(1).write.json(outputPath, mode="append")
-        # Remove _SUCCESS file
-        successFilePath = os.path.join(outputPath, "_SUCCESS")
-        if os.path.exists(successFilePath):
-            os.remove(successFilePath)
-
 
 # Write streaming data using foreachBatch
 query = df.writeStream \
